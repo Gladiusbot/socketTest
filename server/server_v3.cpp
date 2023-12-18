@@ -21,6 +21,9 @@ void processMessage(int clientSocket) {
     while (true) {
         memset(buffer, 0, sizeof(buffer));
         bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
+        if(bytesRead <= 0){
+            break;
+        }
         for( ; i < BUFFER_SIZE && j < BUFFER_SIZE; ){
             if(buffer[j] == '\0'){
                 i = j + 1;
