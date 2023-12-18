@@ -10,6 +10,10 @@
 constexpr int PORT = 9999;
 constexpr int THREAD_POOL_SIZE = 100;
 
+std::mutex mtx;
+std::condition_variable cv;
+std::queue<int> clientSockets;
+
 void processMessage(int clientSocket) {
     char buffer[1024];
     ssize_t bytesRead;
@@ -21,6 +25,19 @@ void processMessage(int clientSocket) {
 
     std::cout << "Client disconnected\n";
     close(clientSocket);
+}
+
+void worker() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [] { return !clientSockets.empty(); });
+
+        int clientSocket = clientSockets.front();
+        clientSockets.pop();
+        lock.unlock();
+
+        processMessage(clientSocket);
+    }
 }
 
 int main() {
@@ -47,6 +64,11 @@ int main() {
         return 1;
     }
 
+    std::vector<std::thread> threads;
+    for (int i = 0; i < THREAD_POOL_SIZE; ++i) {
+        threads.emplace_back(worker);
+    }
+
     std::cout << "Waiting for client connections...\n";
 
     while (true) {
@@ -57,7 +79,15 @@ int main() {
             std::cerr << "Error accepting client connection\n";
             break;
         }
-        processMessage(clientSocket);
+
+        std::unique_lock<std::mutex> lock(mtx);
+        clientSockets.push(clientSocket);
+        lock.unlock();
+        cv.notify_one();
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
     }
 
     close(serverSocket);
