@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-constexpr int BYTE_LENGTH = 20;
+constexpr int BYTE_LENGTH = 1024;
 constexpr int PORT = 9999;
 const char* SERVER_IP = "39.104.209.73";
 
@@ -29,15 +29,19 @@ int main() {
     // 发送的消息内容
     const char* message = "Hi, C++.";
 
+    char bytes[BYTE_LENGTH] = {0};
+
+    int idx = 0;
+    for(char& b: std::string(message)){
+        bytes[idx] = b;
+        idx++;
+    }
+
     // 使用输出流发送消息
     try {
         for (int i = 0; i < 10; i++) {
             // 发送消息
-            ssize_t sentBytes = send(clientSocket, message, strlen(message), 0);
-            if (sentBytes == -1) {
-                std::cerr << "Error sending message to server\n";
-                break;
-            }
+            send(clientSocket, bytes, BYTE_LENGTH, 0);
         }
     } catch (...) {
         std::cerr << "Exception while sending message\n";
