@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 
 constexpr int PORT = 9999;
-constexpr int MESSAGE_COUNT = 10;
+constexpr int MESSAGE_COUNT = 1000;
 constexpr const char* MESSAGE = "Hi, C++.";
 const char* SERVER_IP = "39.104.209.73";
 
@@ -39,8 +39,6 @@ int main() {
             break;
         }
 
-        // 等待一秒钟
-        sleep(1);
     }
 
     close(clientSocket);
