@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-constexpr int BYTE_LENGTH = 20;
+constexpr int BYTE_LENGTH = 1024;
 constexpr int PORT = 9999;
 
 int main() {
