@@ -10,35 +10,34 @@
 #include <vector>
 #define DEBUG
 
-constexpr int PORT = 9999;
+constexpr uint PORT = 9999;
 // header:4bytes
-constexpr int HEADER_LENGTH = 4;
+constexpr uint HEADER_LENGTH = 4;
 // body:1024bytes max
-constexpr int BODY_LENGTH = 1024;
+constexpr uint BODY_LENGTH = 1024;
 // total buffer size
-constexpr int MAX_LENGTH = BODY_LENGTH + HEADER_LENGTH;
-
-void printBuffer(char* buffer, int begin, int end) {
-  for (int i = begin; i < end; ++i) {
-    std::cout << buffer[i];
-  }
-  std::cout << std::endl;
-}
+constexpr uint MAX_LENGTH = BODY_LENGTH + HEADER_LENGTH;
+struct TlvData {
+  int head;
+  const char* body;
+};
 
 /**
  *  process according to TLV protocol
  */
 void processMessage(int client_socket) {
   char buffer[MAX_LENGTH];
-  ssize_t bytes_read = 0;
+  uint bytes_read = 0;
+  // length of data body
   uint data_length = 0;
   memset(buffer, 0, sizeof(buffer));
 
   while (true) {
     // read into buffer
     if (bytes_read != 0) {
-      bytes_read = bytes_read + recv(client_socket, buffer + bytes_read,
-                                     sizeof(buffer) - bytes_read, 0);
+      // bytes_read = bytes_read + recv(client_socket, buffer + bytes_read,
+      // sizeof(buffer) - bytes_read, 0);
+      bytes_read = recv(client_socket, buffer, sizeof(buffer), 0);
     } else {
       bytes_read = recv(client_socket, buffer, sizeof(buffer), 0);
     }
@@ -47,7 +46,7 @@ void processMessage(int client_socket) {
     if (bytes_read < HEADER_LENGTH) {
       continue;
     } else {
-      data_length = (uint)*buffer;
+      std::memcpy(&data_length, buffer, sizeof(uint));
 #ifdef DEBUG
       std::cout << "got patcket length:" << data_length << std::endl;
 #endif
@@ -60,21 +59,27 @@ void processMessage(int client_socket) {
     }
 
     // body transfer not finished yet
-    if (data_length + HEADER_LENGTH < bytes_read) {
+    if (data_length + HEADER_LENGTH > bytes_read) {
       continue;
     } else {  // body transfer finished, print body
-      printBuffer(buffer, HEADER_LENGTH + 1, data_length + HEADER_LENGTH);
+      for (uint i = HEADER_LENGTH; i < HEADER_LENGTH + data_length; ++i) {
+        std::cout << buffer[i];
+      }
+      std::cout << std::endl;
+      // std::string resolved_string(buffer + HEADER_LENGTH, data_length);
+      // std::cout << "resolved from packet:" << resolved_string << std::endl;
     }
 
     // after print, remove used message. Careful: do not delete next packet
-    int left_idx = 0;
-    int right_idx = data_length + HEADER_LENGTH;
+    uint left_idx = 0;
+    uint right_idx = data_length + HEADER_LENGTH;
     while (right_idx < bytes_read) {
       buffer[left_idx] = buffer[right_idx];
       left_idx++;
       right_idx++;
     }
-    memset(buffer, left_idx, sizeof(buffer) - left_idx);
+    // memset(buffer + left_idx, 0, sizeof(buffer) - left_idx);
+    bytes_read = left_idx;
   }
 
   std::cout << "Client disconnected\n";
